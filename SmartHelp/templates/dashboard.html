@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Bosh sahifa — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">UMUMIY KO'RINISH</span><h1>Salom, {{ current_user.name.split(' ')[0] }}!</h1><p class="muted">Texnik murojaatlaringiz holati va so'nggi faollik.</p></div><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Murojaat yaratish</a></div>
+<section class="stats-grid">
+  <article class="stat-card"><div class="stat-label">Jami murojaatlar <span class="stat-symbol purple">▤</span></div><div class="stat-number">{{ total }}</div><div class="stat-foot">Siz ko'rishingiz mumkin bo'lgan murojaatlar</div></article>
+  <article class="stat-card"><div class="stat-label">Ochiq murojaatlar <span class="stat-symbol orange">◷</span></div><div class="stat-number">{{ open_count }}</div><div class="stat-foot">Yangi yoki hal qilinayotgan</div></article>
+  <article class="stat-card"><div class="stat-label">Hal qilingan <span class="stat-symbol green">✓</span></div><div class="stat-number">{{ resolved_count }}</div><div class="stat-foot">Yakunlangan ishlar</div></article>
+  {% if device_count is not none %}<article class="stat-card"><div class="stat-label">Qurilmalar <span class="stat-symbol blue">⌘</span></div><div class="stat-number">{{ device_count }}</div><div class="stat-foot">Inventar ro'yxatida</div></article>{% endif %}
+</section>
+<div class="content-grid">
+<section class="panel"><div class="panel-heading"><div><h2>So'nggi murojaatlar</h2><p class="muted">Oxirgi yaratilgan murojaatlar</p></div><a class="text-link" href="{{ url_for('tickets') }}">Barchasi →</a></div>
+{% if tickets %}
+<div class="table-wrap"><table><thead><tr><th>Murojaat</th><th>Ustuvorlik</th><th>Holat</th><th>Sana</th></tr></thead><tbody>
+{% for t in tickets %}<tr><td><a class="ticket-link" href="{{ url_for('ticket_detail', ticket_id=t.id) }}"><b>#{{ t.id }} · {{ t.title }}</b><small>{{ categories.get(t.category, t.category) }}</small></a></td><td><span class="priority priority-{{ t.priority|lower|replace(' ', '-') }}">{{ t.priority }}</span></td><td><span class="status status-{{ t.status }}">{{ statuses[t.status] }}</span></td><td>{{ t.created_at.strftime('%d.%m.%Y') }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty-state"><div class="empty-icon">＋</div><h3>Hali murojaat yo'q</h3><p>Birinchi murojaatingizni yarating.</p><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">Murojaat yaratish</a></div>{% endif %}
+</section>
+<aside class="panel category-panel"><div class="panel-heading"><div><h2>Kategoriyalar</h2><p class="muted">Murojaatlar taqsimoti</p></div></div>
+{% for item in category_counts %}<div class="category-row"><div><span>{{ item.label }}</span><b>{{ item.count }}</b></div><div class="progress"><span style="width: {{ (item.count / total * 100) if total else 0 }}%"></span></div></div>{% endfor %}
+<div class="tip-box"><b>Maslahat</b><p>Muammoni aniq tasvirlash mutaxassisga uni tezroq hal qilishga yordam beradi.</p></div>
+</aside></div>
+{% endblock %}

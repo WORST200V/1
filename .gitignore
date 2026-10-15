@@ -1,0 +1,35 @@
+# Virtual environments
+venv/
+.venv/
+env/
+*/venv/
+*/.venv/
+
+# Python cache
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & secrets
+.env
+*/.env
+
+# SQLite & databases
+*.sqlite
+*.sqlite3
+*.db
+instance/
+*/instance/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/

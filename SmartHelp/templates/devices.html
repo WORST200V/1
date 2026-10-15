@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Qurilmalar — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">TEXNIK INVENTAR</span><h1>Qurilmalar</h1><p class="muted">Universitetdagi texnik vositalar ro'yxati.</p></div>{% if current_user.role == 'admin' %}<a class="btn btn-primary" href="{{ url_for('new_device') }}">+ Qurilma qo'shish</a>{% endif %}</div>
+<section class="panel">{% if devices %}<div class="table-wrap"><table><thead><tr><th>Qurilma</th><th>Inventar raqami</th><th>Turi</th><th>Xona</th><th>Holati</th><th>Izoh</th></tr></thead><tbody>{% for d in devices %}<tr><td><b>{{ d.name }}</b></td><td>{{ d.inventory_number }}</td><td>{{ categories.get(d.device_type, d.device_type) }}</td><td>{{ d.room or '—' }}</td><td><span class="status {% if d.status=='working' %}status-resolved{% else %}status-in_progress{% endif %}">{{ 'Ishlayapti' if d.status=='working' else d.status }}</span></td><td>{{ d.notes or '—' }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><div class="empty-icon">⌘</div><h3>Qurilmalar ro'yxati bo'sh</h3><p>Administrator birinchi qurilmani qo'shishi mumkin.</p></div>{% endif %}</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Foydalanuvchilar — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">ADMINISTRATOR</span><h1>Foydalanuvchilar</h1><p class="muted">Foydalanuvchi rollarini boshqarish.</p></div></div>
+<section class="panel"><div class="table-wrap"><table><thead><tr><th>Ism</th><th>Email</th><th>Joriy rol</th><th>Rolni o'zgartirish</th></tr></thead><tbody>{% for u in users %}<tr><td><b>{{ u.name }}</b></td><td>{{ u.email }}</td><td>{{ roles[u.role] }}</td><td><form class="inline-form" method="post"><input type="hidden" name="user_id" value="{{ u.id }}"><select name="role">{% for key,label in roles.items() %}<option value="{{ key }}" {% if u.role==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-small btn-secondary" type="submit">Saqlash</button></form></td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

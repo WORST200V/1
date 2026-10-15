@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Qurilma qo'shish — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">TEXNIK INVENTAR</span><h1>Qurilma qo'shish</h1></div><a class="btn btn-secondary" href="{{ url_for('devices') }}">← Orqaga</a></div>
+<section class="form-panel"><form method="post" class="form">
+<label>Qurilma nomi<input name="name" required maxlength="120" placeholder="Masalan: 204-auditoriya kompyuteri"></label>
+<label>Inventar raqami<input name="inventory_number" required maxlength="80" placeholder="Masalan: PC-204-01"></label>
+<label>Turi<select name="device_type">{% for key,label in categories.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+<label>Xona / joylashuv<input name="room" maxlength="80" placeholder="Masalan: 204-auditoriya"></label>
+<label>Izoh<textarea name="notes" rows="3" placeholder="Modeli, IP manzili yoki boshqa eslatma"></textarea></label>
+<button class="btn btn-primary" type="submit">Qurilmani saqlash</button></form></section>
+{% endblock %}

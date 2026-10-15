@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Murojaatlar — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">MUAMMOLAR MARKAZI</span><h1>Murojaatlar</h1><p class="muted">Murojaatlarni qidiring, saralang va holatini kuzating.</p></div><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Yangi murojaat</a></div>
+<section class="panel">
+<form method="get" class="filters">
+<input type="search" name="q" value="{{ search }}" placeholder="Murojaatni qidirish...">
+<select name="status"><option value="">Barcha holatlar</option>{% for key,label in statuses.items() %}<option value="{{ key }}" {% if selected_status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<select name="category"><option value="">Barcha kategoriyalar</option>{% for key,label in categories.items() %}<option value="{{ key }}" {% if selected_category==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<button class="btn btn-secondary" type="submit">Filtrlash</button><a class="clear-link" href="{{ url_for('tickets') }}">Tozalash</a>
+</form>
+{% if tickets %}<div class="table-wrap"><table><thead><tr><th>ID / Murojaat</th><th>Yaratuvchi</th><th>Ustuvorlik</th><th>Mas'ul</th><th>Holat</th><th>Sana</th></tr></thead><tbody>
+{% for t in tickets %}<tr><td><a class="ticket-link" href="{{ url_for('ticket_detail', ticket_id=t.id) }}"><b>#{{ t.id }} · {{ t.title }}</b><small>{{ categories.get(t.category, t.category) }}</small></a></td><td>{{ t.creator.name }}</td><td><span class="priority priority-{{ t.priority|lower|replace(' ', '-') }}">{{ t.priority }}</span></td><td>{{ t.technician.name if t.technician else 'Biriktirilmagan' }}</td><td><span class="status status-{{ t.status }}">{{ statuses[t.status] }}</span></td><td>{{ t.created_at.strftime('%d.%m.%Y %H:%M') }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class="empty-state"><div class="empty-icon">⌕</div><h3>Murojaatlar topilmadi</h3><p>Filtrlarni o'zgartiring yoki yangi murojaat yarating.</p></div>{% endif %}
+</section>
+{% endblock %}

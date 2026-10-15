@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Murojaat #{{ ticket.id }} — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><a class="back-link" href="{{ url_for('tickets') }}">← Murojaatlarga qaytish</a><span class="eyebrow">MUROJAAT #{{ ticket.id }}</span><h1>{{ ticket.title }}</h1><p class="muted">Yaratilgan: {{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }} · {{ ticket.creator.name }}</p></div><span class="status status-{{ ticket.status }} large-status">{{ statuses[ticket.status] }}</span></div>
+<div class="detail-grid"><section class="panel"><div class="panel-heading"><h2>Muammo tafsilotlari</h2><span class="priority priority-{{ ticket.priority|lower|replace(' ', '-') }}">{{ ticket.priority }} ustuvorlik</span></div>
+<div class="detail-meta"><div><small>Kategoriya</small><b>{{ categories.get(ticket.category, ticket.category) }}</b></div><div><small>Qurilma</small><b>{{ ticket.device.name if ticket.device else 'Ko‘rsatilmagan' }}</b></div><div><small>Ta'sir / jiddiylik</small><b>{{ ticket.impact }} / 3 · {{ ticket.severity }} / 3</b></div><div><small>Mas'ul mutaxassis</small><b>{{ ticket.technician.name if ticket.technician else 'Biriktirilmagan' }}</b></div></div>
+<h3 class="subheading">Tavsif</h3><p class="description-text">{{ ticket.description }}</p>
+{% if ticket.resolution %}<h3 class="subheading">Yechim</h3><p class="description-text">{{ ticket.resolution }}</p>{% endif %}
+{% if current_user.role in ['admin','technician'] %}<hr class="soft-divider"><h2>Holat va mas'ulni yangilash</h2><form method="post" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}" class="form">
+<label>Holat<select name="status">{% for key,label in statuses.items() %}<option value="{{ key }}" {% if ticket.status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<label>Mas'ul mutaxassis<select name="technician_id"><option value="">O'zgarishsiz qoldirish</option>{% for tech in technicians %}<option value="{{ tech.id }}" {% if ticket.technician_id==tech.id %}selected{% endif %}>{{ tech.name }} · {{ roles[tech.role] }}</option>{% endfor %}</select></label>
+<label>Yechim / bajarilgan ish<textarea name="resolution" rows="3" placeholder="Qanday ish bajarildi?">{{ ticket.resolution or '' }}</textarea></label>
+<label>Tarix uchun izoh (ixtiyoriy)<input name="comment" placeholder="Masalan: kabel qayta ulandi"></label>
+<button class="btn btn-primary" type="submit">O'zgarishlarni saqlash</button></form>{% endif %}
+</section>
+<aside class="panel"><div class="panel-heading"><h2>O'zgarishlar tarixi</h2></div>
+{% if ticket.history %}<div class="timeline">{% for h in ticket.history|sort(attribute='changed_at', reverse=true) %}<div class="timeline-item"><span class="timeline-dot"></span><div><b>{{ statuses.get(h.new_status, h.new_status) }}</b><p>{{ h.actor.name }}{% if h.comment %} · {{ h.comment }}{% endif %}</p><small>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</small></div></div>{% endfor %}</div>{% else %}<p class="muted">Hozircha tarix mavjud emas.</p>{% endif %}
+</aside></div>
+{% endblock %}

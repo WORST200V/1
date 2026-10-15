@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Ro'yxatdan o'tish — SmartHelp{% endblock %}
+{% block content %}
+<div class="auth-wrap"><section class="auth-card"><span class="eyebrow">YANGI HISOB</span><h1>Ro'yxatdan o'tish</h1><p class="muted">Murojaat yuborish uchun hisob yarating.</p>
+<form method="post" class="form">
+<label>Ism va familiya<input type="text" name="name" required maxlength="100" autocomplete="name" placeholder="Ismingiz"></label>
+<label>Email<input type="email" name="email" required maxlength="150" autocomplete="email" placeholder="name@example.com"></label>
+<label>Parol<input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Kamida 8 belgi"></label>
+<button class="btn btn-primary full" type="submit">Hisob yaratish →</button>
+</form><p class="auth-bottom">Hisobingiz bormi? <a href="{{ url_for('login') }}">Tizimga kiring</a></p></section></div>
+{% endblock %}

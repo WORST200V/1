@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Yangi murojaat — SmartHelp{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">YORDAM SO'RASH</span><h1>Yangi murojaat</h1><p class="muted">Muammo haqida iloji boricha aniq ma'lumot bering.</p></div><a class="btn btn-secondary" href="{{ url_for('tickets') }}">← Orqaga</a></div>
+<section class="form-panel"><form method="post" class="form two-col">
+<label class="span-2">Murojaat sarlavhasi<input type="text" name="title" required maxlength="160" placeholder="Masalan: 204-auditoriyada internet ishlamayapti"></label>
+<label>Kategoriya<select name="category" required>{% for key,label in categories.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+<label>Qurilma (ixtiyoriy)<select name="device_id"><option value="">Qurilma tanlanmagan</option>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.inventory_number }}{% if device.room %} · {{ device.room }}{% endif %}</option>{% endfor %}</select></label>
+<label>Ta'sir doirasi<select name="impact"><option value="1">1 — Bitta qurilma</option><option value="2">2 — Bir nechta foydalanuvchi</option><option value="3">3 — Butun xona yoki tarmoq</option></select></label>
+<label>Jiddiylik<select name="severity"><option value="1">1 — Past</option><option value="2">2 — Ishga xalaqit beradi</option><option value="3">3 — Ish to'xtagan</option></select></label>
+<label class="span-2">Muammo tavsifi<textarea name="description" rows="5" required placeholder="Nima sodir bo'ldi? Qachondan beri? Qanday xato chiqmoqda?"></textarea></label>
+<div class="span-2 form-note">Ustuvorlik ta'sir doirasi va jiddiylik ballari asosida avtomatik hisoblanadi.</div>
+<div class="span-2 form-actions"><a class="btn btn-secondary" href="{{ url_for('tickets') }}">Bekor qilish</a><button class="btn btn-primary" type="submit">Murojaatni yuborish →</button></div>
+</form></section>
+{% endblock %}
