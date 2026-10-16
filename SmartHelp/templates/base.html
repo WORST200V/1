@@ -1,45 +1,116 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="{{ current_lang }}">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}SmartHelp{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">S</span> SmartHelp</a>
-  {% if current_user %}
-  <button class="menu-toggle" id="menuToggle" aria-label="Menyuni ochish">☰</button>
-  <nav class="nav" id="mainNav">
-    <a href="{{ url_for('dashboard') }}">Bosh sahifa</a>
-    <a href="{{ url_for('tickets') }}">Murojaatlar</a>
-    <a href="{{ url_for('new_ticket') }}" class="nav-cta">+ Murojaat yaratish</a>
-    {% if current_user.role in ['admin', 'technician'] %}<a href="{{ url_for('devices') }}">Qurilmalar</a>{% endif %}
-    {% if current_user.role == 'admin' %}<a href="{{ url_for('users') }}">Foydalanuvchilar</a>{% endif %}
-    <span class="nav-user">{{ current_user.name }} · {{ roles[current_user.role] }}</span>
-    <a href="{{ url_for('logout') }}">Chiqish</a>
-  </nav>
-  {% else %}
-  <nav class="nav">
-    <a href="{{ url_for('login') }}">Kirish</a>
-    <a href="{{ url_for('register') }}" class="nav-cta">Ro'yxatdan o'tish</a>
-  </nav>
-  {% endif %}
-</header>
-<main class="page">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="flash-stack">
-      {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}<button class="flash-close" aria-label="Yopish">×</button></div>
-      {% endfor %}
-      </div>
+
+{% if not current_user %}
+<!-- Tizimga kirmagan holatda o'ng yuqoridagi til tanlash paneli -->
+<div class="lang-floating-top">
+  <div class="lang-selector">
+    {% for code, lang_meta in languages.items() %}
+    <a href="{{ url_for('set_language', lang=code) }}" class="lang-opt {% if current_lang == code %}active{% endif %}" title="{{ lang_meta.name }}">
+      <span>{{ lang_meta.flag }}</span> {{ lang_meta.short }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if current_user %}
+<header>
+  <div class="nav">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="logo">S</span>SmartHelp</a>
+    <a class="l {% if request.endpoint == 'dashboard' %}on{% endif %}" href="{{ url_for('dashboard') }}">{{ t('nav_home') }}</a>
+    <a class="l {% if request.endpoint in ['tickets', 'ticket_detail', 'new_ticket'] %}on{% endif %}" href="{{ url_for('tickets') }}">{{ t('nav_tickets') }}</a>
+    
+    <!-- Qurilmalar bo'limi barcha foydalanuvchilar (student, xodim, IT, admin, superadmin) uchun ochiq -->
+    <a class="l {% if request.endpoint in ['devices', 'room_detail', 'new_room_device'] %}on{% endif %}" href="{{ url_for('devices') }}">{{ t('nav_devices') }}</a>
+    
+    {% if current_user.role in ['admin', 'superadmin'] %}
+    <a class="l {% if request.endpoint == 'users' %}on{% endif %}" href="{{ url_for('users') }}">{{ t('nav_users') }}</a>
     {% endif %}
-  {% endwith %}
-  {% block content %}{% endblock %}
-</main>
-<footer class="footer">SmartHelp · O'quv loyihasi · IT xizmatlar va texnik murojaatlarni boshqarish</footer>
+
+    <!-- O'ng tomondagi til tanlash va profil paneli -->
+    <div class="nav-right" style="display:flex;align-items:center;gap:12px;margin-left:auto">
+      
+      <div class="lang-selector nav-lang">
+        {% for code, lang_meta in languages.items() %}
+        <a href="{{ url_for('set_language', lang=code) }}" class="lang-opt {% if current_lang == code %}active{% endif %}" title="{{ lang_meta.name }}">
+          <span>{{ lang_meta.flag }}</span> {{ lang_meta.short }}
+        </a>
+        {% endfor %}
+      </div>
+
+      <div class="prof" id="prof">
+        <button class="pbtn" id="pbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" type="button">
+          <span class="av">{{ current_user.initials }}</span>
+          <span class="pname">{{ current_user.name }}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="menu" id="menu" role="menu">
+          <!-- Profil ma'lumotlari: bosganda tahrirlashga o'tadi -->
+          <a class="who who-clickable" href="{{ url_for('profile') }}" title="{{ t('nav_profile') }}">
+            <b>{{ current_user.name }}</b>
+            <span>{{ get_role_label(current_user.role) }}</span>
+            <small style="color:var(--blue);display:block;margin-top:4px;font-size:11px;font-weight:600">✏️ {{ t('nav_profile') }}</small>
+          </a>
+
+          <a class="menu-action-link" href="{{ url_for('profile') }}" role="menuitem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            {{ t('nav_profile') }}
+          </a>
+
+          {% if current_user.role in ['admin', 'superadmin'] %}
+          <a class="menu-action-link trash-link" href="{{ url_for('trash') }}" role="menuitem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            {{ t('nav_trash') }}
+            {% if trash_count > 0 %}
+            <span class="nav-trash-pill">{{ trash_count }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+
+          <button id="themeToggle" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            {{ t('nav_theme') }}
+          </button>
+          
+          <a class="out" href="{{ url_for('logout') }}" role="menuitem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            {{ t('nav_logout') }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="toast-container">
+    {% for category, message in messages %}
+      <div class="toast toast-{{ category }}" role="status">
+        <span>{{ message }}</span>
+        <button class="toast-close" type="button" aria-label="Yopish">×</button>
+        <i></i>
+      </div>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+{% if current_user %}
+<footer>{{ t('footer_text') }}</footer>
+{% endif %}
 </body>
 </html>

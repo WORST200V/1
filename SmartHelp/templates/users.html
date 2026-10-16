@@ -1,6 +1,143 @@
 {% extends "base.html" %}
-{% block title %}Foydalanuvchilar — SmartHelp{% endblock %}
+{% block title %}SmartHelp — {{ t('users_title') }}{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">ADMINISTRATOR</span><h1>Foydalanuvchilar</h1><p class="muted">Foydalanuvchi rollarini boshqarish.</p></div></div>
-<section class="panel"><div class="table-wrap"><table><thead><tr><th>Ism</th><th>Email</th><th>Joriy rol</th><th>Rolni o'zgartirish</th></tr></thead><tbody>{% for u in users %}<tr><td><b>{{ u.name }}</b></td><td>{{ u.email }}</td><td>{{ roles[u.role] }}</td><td><form class="inline-form" method="post"><input type="hidden" name="user_id" value="{{ u.id }}"><select name="role">{% for key,label in roles.items() %}<option value="{{ key }}" {% if u.role==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-small btn-secondary" type="submit">Saqlash</button></form></td></tr>{% endfor %}</tbody></table></div></section>
+<main>
+  <div class="top">
+    <div>
+      <h1>{{ t('users_title') }}</h1>
+      <p class="sub">
+        {% if current_user.role == 'superadmin' %}
+          {{ t('users_sub_superadmin') }}
+        {% else %}
+          {{ t('users_sub_admin') }}
+        {% endif %}
+      </p>
+    </div>
+
+    {% if current_user.role == 'superadmin' %}
+    <button class="cta" type="button" onclick="openModal('addUserModal')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      {{ t('add_user_btn') }}
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="card pad">
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t('col_user') }}</th>
+            <th>{{ t('col_email') }}</th>
+            <th>{{ t('col_current_role') }}</th>
+            {% if current_user.role == 'superadmin' %}
+            <th>{{ t('col_change_role') }}</th>
+            {% endif %}
+            <th>{{ t('col_registered_date') }}</th>
+            {% if current_user.role == 'superadmin' %}
+            <th style="text-align:right">{{ t('col_actions') }}</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="av" style="width:30px;height:30px;font-size:11px">{{ u.initials }}</span>
+                <b>{{ u.name }}</b>
+                {% if u.id == current_user.id %}
+                <span style="font-size:11px;color:var(--blue);font-weight:700">(Siz)</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>{{ u.email }}</td>
+            <td>
+              {% if u.role == 'superadmin' %}
+              <span class="b danger" style="background:rgba(255, 60, 60, 0.2);color:#ff4d4d;font-weight:800">👑 {{ get_role_label(u.role) }}</span>
+              {% elif u.role == 'admin' %}
+              <span class="b danger">{{ get_role_label(u.role) }}</span>
+              {% elif u.role == 'technician' %}
+              <span class="b new">{{ get_role_label(u.role) }}</span>
+              {% else %}
+              <span class="b ok">{{ get_role_label(u.role) }}</span>
+              {% endif %}
+            </td>
+
+            {# FAQAT superadmin rolni o'zgartira oladi #}
+            {% if current_user.role == 'superadmin' %}
+            <td>
+              <form method="post" action="{{ url_for('users') }}" style="display:flex;gap:8px;align-items:center;margin:0">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <select name="role" style="height:36px;padding:0 8px;min-width:145px;font-size:13px;border-radius:8px">
+                  {% for key, label in roles_translated.items() %}
+                  <option value="{{ key }}" {% if u.role == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-secondary btn-sm" type="submit" style="height:36px;padding:0 12px;font-size:13px">{{ t('save') }}</button>
+              </form>
+            </td>
+            {% endif %}
+
+            <td class="d">{{ u.created_at.strftime('%d.%m.%Y') }}</td>
+
+            {% if current_user.role == 'superadmin' %}
+            <td style="text-align:right">
+              {% if u.id != current_user.id %}
+              <form method="post" action="{{ url_for('delete_user_by_superadmin', user_id=u.id) }}" onsubmit="return confirm('{{ t('delete_user_confirm') }} ({{ u.name }})');" style="margin:0;display:inline">
+                <button class="btn btn-outline-danger btn-sm" type="submit" title="{{ t('delete') }}">
+                  {{ t('delete') }}
+                </button>
+              </form>
+              {% else %}
+              <span style="font-size:12px;color:var(--mute)">-</span>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+{% if current_user.role == 'superadmin' %}
+<!-- YANGI XODIM / FOYDALANUVCHI QO'SHISH MODALI (SUPERADMIN UCHUN) -->
+<div class="modal-backdrop" id="addUserModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>{{ t('add_user_btn') }}</h2>
+      <button class="modal-close" type="button" onclick="closeModal('addUserModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('new_user_by_superadmin') }}">
+      <div class="form-group">
+        <label for="newUserName">{{ t('full_name') }} *</label>
+        <input type="text" id="newUserName" name="name" required placeholder="{{ t('full_name_placeholder') }}" autofocus>
+      </div>
+      <div class="form-group">
+        <label for="newUserEmail">{{ t('email') }} *</label>
+        <input type="email" id="newUserEmail" name="email" required placeholder="xodim@smarthelp.local">
+      </div>
+      <div class="form-group">
+        <label for="newUserRole">{{ t('profile_role_label') }} *</label>
+        <select id="newUserRole" name="role">
+          <option value="technician">{{ roles_translated.get('technician', 'IT mutaxassisi') }}</option>
+          <option value="admin">{{ roles_translated.get('admin', 'Administrator') }}</option>
+          <option value="user">{{ roles_translated.get('user', 'Foydalanuvchi') }}</option>
+          <option value="superadmin">{{ roles_translated.get('superadmin', 'Super Administrator') }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="newUserPassword">{{ t('password') }} *</label>
+        <input type="password" id="newUserPassword" name="password" required placeholder="{{ t('password_sub') }}" minlength="8">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px">
+        <button class="btn btn-secondary" type="button" onclick="closeModal('addUserModal')">{{ t('cancel') }}</button>
+        <button class="btn btn-primary" type="submit">{{ t('save') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -1,11 +1,169 @@
 {% extends "base.html" %}
-{% block title %}Ro'yxatdan o'tish — SmartHelp{% endblock %}
+{% block title %}SmartHelp — Ro‘yxatdan o‘tish{% endblock %}
 {% block content %}
-<div class="auth-wrap"><section class="auth-card"><span class="eyebrow">YANGI HISOB</span><h1>Ro'yxatdan o'tish</h1><p class="muted">Murojaat yuborish uchun hisob yarating.</p>
-<form method="post" class="form">
-<label>Ism va familiya<input type="text" name="name" required maxlength="100" autocomplete="name" placeholder="Ismingiz"></label>
-<label>Email<input type="email" name="email" required maxlength="150" autocomplete="email" placeholder="name@example.com"></label>
-<label>Parol<input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Kamida 8 belgi"></label>
-<button class="btn btn-primary full" type="submit">Hisob yaratish →</button>
-</form><p class="auth-bottom">Hisobingiz bormi? <a href="{{ url_for('login') }}">Tizimga kiring</a></p></section></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-printer" viewBox="0 0 48 48"><rect x="14" y="5" width="20" height="13" rx="2" fill="#dbe8ff"/><rect x="5" y="16" width="38" height="18" rx="5" fill="#5b8def"/><rect x="12" y="28" width="24" height="14" rx="2" fill="#fff" stroke="#2f5fd0" stroke-width="2"/><circle cx="37" cy="22" r="2" fill="#fff"/></symbol>
+<symbol id="i-scanner" viewBox="0 0 48 48"><path d="M6 24 16 10h26l-6 14z" fill="#dbe8ff" stroke="#2f5fd0" stroke-width="2" stroke-linejoin="round"/><rect x="5" y="24" width="32" height="12" rx="4" fill="#5b8def"/><rect x="9" y="28" width="12" height="3" rx="1.5" fill="#fff"/></symbol>
+<symbol id="i-router" viewBox="0 0 48 48"><path d="M14 20 10 8M34 20l4-12" stroke="#2f5fd0" stroke-width="3" stroke-linecap="round"/><rect x="4" y="20" width="40" height="16" rx="5" fill="#16306e"/><circle cx="14" cy="28" r="2.4" fill="#5bd0ff"/><circle cx="22" cy="28" r="2.4" fill="#5bd0ff"/><circle cx="30" cy="28" r="2.4" fill="#5bd0ff"/><circle cx="38" cy="28" r="2.4" fill="#7dff9b"/></symbol>
+<symbol id="i-camera" viewBox="0 0 48 48"><circle cx="24" cy="19" r="14" fill="#f2f6ff" stroke="#2f5fd0" stroke-width="2"/><circle cx="24" cy="19" r="7" fill="#16306e"/><circle cx="22" cy="17" r="2" fill="#6fa6ff"/><path d="M20 33h8l2 8H18z" fill="#5b8def"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 48 48"><g fill="none" stroke="#2f7bff" stroke-width="5" stroke-linecap="round"><path d="M5 18a28 28 0 0 1 38 0"/><path d="M12 26a18 18 0 0 1 24 0"/><path d="M19 33a8 8 0 0 1 10 0"/></g><circle cx="24" cy="40" r="3.5" fill="#2f7bff"/></symbol>
+<symbol id="i-laptop" viewBox="0 0 48 48"><rect x="9" y="9" width="30" height="21" rx="3" fill="#16306e"/><rect x="12" y="12" width="24" height="15" rx="1.5" fill="#5b8def"/><path d="M3 34h42l-3 6H6z" fill="#cfdcf5" stroke="#2f5fd0" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+</defs>
+</svg>
+
+<main class="wrap">
+  <div class="brand"><span class="logo">S</span>SmartHelp</div>
+
+  <section>
+    <p class="sub">{{ t('hero_sub') }}</p>
+    <h1>{{ t('hero_title') }}</h1>
+    <div class="stage" id="stage" aria-label="SmartHelp animatsiyasi">
+      <div class="glow"></div>
+      <div id="word"><span class="smart">Smart</span><span class="hwrap" id="hw"><span class="help" id="hp">Help</span></span></div>
+      <div id="S">S</div>
+      <div class="ring" id="ring"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="tabs">
+      <a href="{{ url_for('login') }}">{{ t('login_title') }}</a>
+      <a class="on" href="{{ url_for('register') }}">{{ t('register_title') }}</a>
+    </div>
+    <div class="body">
+      <h2>{{ t('register_title') }}</h2>
+      <p class="sub">{{ t('register_sub') }}</p>
+      
+      <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+          <label for="name">{{ t('full_name') }}</label>
+          <input id="name" name="name" type="text" placeholder="{{ t('full_name_placeholder') }}" required autofocus>
+        </div>
+        <div class="form-group">
+          <label for="email">{{ t('email') }}</label>
+          <input id="email" name="email" type="email" placeholder="example@university.uz" required>
+        </div>
+        <div class="form-group">
+          <label for="password">{{ t('password') }} ({{ t('password_sub') }})</label>
+          <input id="password" name="password" type="password" minlength="8" placeholder="{{ t('password') }}" required>
+        </div>
+        <button class="primary" type="submit" style="margin-top: 10px;">{{ t('register_title') }}</button>
+      </form>
+      
+      <div class="foot">{{ t('have_account') }} <a href="{{ url_for('login') }}">{{ t('login_title') }}</a></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  var stage = document.getElementById('stage'),
+      word = document.getElementById('word'),
+      hw = document.getElementById('hw'),
+      hp = document.getElementById('hp'),
+      S = document.getElementById('S'),
+      ring = document.getElementById('ring');
+  if(!stage || !word || !hw || !hp || !S || !ring) return;
+
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var icons = ['printer','scanner','router','camera','wifi','laptop'];
+  var devs = [], timers = [], raf = 0, orbitStart = 0;
+
+  icons.forEach(function(n){
+    var d = document.createElement('div');
+    d.className = 'dev';
+    d.innerHTML = '<svg><use href="#i-' + n + '"/></svg>';
+    stage.appendChild(d);
+    devs.push(d);
+  });
+
+  function later(f, ms){ timers.push(setTimeout(f, ms)); }
+  function ease(t){ return 1 - Math.pow(1 - t, 3); }
+
+  function burst(){
+    ring.classList.remove('go');
+    void ring.offsetWidth;
+    ring.classList.add('go');
+    for(var i = 0; i < 22; i++){
+      var p = document.createElement('div');
+      p.className = 'p';
+      stage.appendChild(p);
+      var a = i / 22 * Math.PI * 2,
+          dist = 110 + Math.random() * 90,
+          s = 0.5 + Math.random() * 1.1;
+      p.animate([
+        {transform: 'translate(0,0) scale(' + s + ')', opacity: 1},
+        {transform: 'translate(' + Math.cos(a)*dist + 'px,' + Math.sin(a)*dist + 'px) scale(0)', opacity: 0}
+      ], {
+        duration: 650 + Math.random() * 250,
+        easing: 'cubic-bezier(.1,.8,.3,1)',
+        fill: 'forwards'
+      }).onfinish = (function(e){ return function(){ e.remove(); } })(p);
+    }
+  }
+
+  function frame(now){
+    var t = (now - orbitStart) / 1000,
+        w = stage.clientWidth,
+        sc = Math.min(1, w / 560);
+    var R = 215 * sc,
+        Ry = 78 * sc,
+        tilt = -12 * Math.PI / 180,
+        n = devs.length;
+
+    devs.forEach(function(d, i){
+      var p = Math.max(0, Math.min(1, (t - i * 0.18) / 1.2)),
+          e = ease(p);
+      var a = (reduce ? 0 : t * 0.75) + i / n * Math.PI * 2;
+      var x = Math.cos(a) * R,
+          y = Math.sin(a) * Ry;
+      var ox = x * Math.cos(tilt) - y * Math.sin(tilt),
+          oy = x * Math.sin(tilt) + y * Math.cos(tilt);
+      var depth = Math.sin(a);
+      var sx = -w * 0.62,
+          sy = (i - n / 2) * 40 * sc;
+      var X = sx + (ox - sx) * e,
+          Y = sy + (oy - sy) * e;
+      var s = (0.72 + 0.28 * (depth + 1) / 2) * (0.6 + 0.4 * e);
+      d.style.transform = 'translate(' + X + 'px,' + Y + 'px) scale(' + s + ')';
+      d.style.opacity = e * (depth > 0 ? 1 : 0.6);
+      d.style.zIndex = depth > 0 ? 10 : 1;
+    });
+    if(!reduce) raf = requestAnimationFrame(frame);
+  }
+
+  function reset(){
+    timers.forEach(clearTimeout);
+    timers = [];
+    cancelAnimationFrame(raf);
+    word.className = '';
+    word.style.display = '';
+    hw.className = 'hwrap';
+    hw.style.width = '';
+    S.className = '';
+    ring.classList.remove('go');
+    devs.forEach(function(d){ d.style.opacity = 0; });
+  }
+
+  function play(){
+    reset();
+    hw.style.width = hp.offsetWidth + 'px';
+    if(reduce){
+      word.style.display = 'none';
+      S.style.transform = 'scale(1)';
+      orbitStart = performance.now() - 5000;
+      frame(performance.now());
+      return;
+    }
+    later(function(){ word.classList.add('in'); }, 150);
+    later(function(){ word.classList.add('shrink'); hw.classList.add('go'); }, 1300);
+    later(function(){ word.classList.add('boom'); burst(); }, 2500);
+    later(function(){ S.classList.add('show'); }, 2640);
+    later(function(){ orbitStart = performance.now(); raf = requestAnimationFrame(frame); }, 3300);
+  }
+
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(play);
+})();
+</script>
 {% endblock %}

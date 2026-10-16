@@ -1,15 +1,117 @@
 {% extends "base.html" %}
-{% block title %}Yangi murojaat — SmartHelp{% endblock %}
+{% block title %}SmartHelp — Yangi murojaat{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">YORDAM SO'RASH</span><h1>Yangi murojaat</h1><p class="muted">Muammo haqida iloji boricha aniq ma'lumot bering.</p></div><a class="btn btn-secondary" href="{{ url_for('tickets') }}">← Orqaga</a></div>
-<section class="form-panel"><form method="post" class="form two-col">
-<label class="span-2">Murojaat sarlavhasi<input type="text" name="title" required maxlength="160" placeholder="Masalan: 204-auditoriyada internet ishlamayapti"></label>
-<label>Kategoriya<select name="category" required>{% for key,label in categories.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
-<label>Qurilma (ixtiyoriy)<select name="device_id"><option value="">Qurilma tanlanmagan</option>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.inventory_number }}{% if device.room %} · {{ device.room }}{% endif %}</option>{% endfor %}</select></label>
-<label>Ta'sir doirasi<select name="impact"><option value="1">1 — Bitta qurilma</option><option value="2">2 — Bir nechta foydalanuvchi</option><option value="3">3 — Butun xona yoki tarmoq</option></select></label>
-<label>Jiddiylik<select name="severity"><option value="1">1 — Past</option><option value="2">2 — Ishga xalaqit beradi</option><option value="3">3 — Ish to'xtagan</option></select></label>
-<label class="span-2">Muammo tavsifi<textarea name="description" rows="5" required placeholder="Nima sodir bo'ldi? Qachondan beri? Qanday xato chiqmoqda?"></textarea></label>
-<div class="span-2 form-note">Ustuvorlik ta'sir doirasi va jiddiylik ballari asosida avtomatik hisoblanadi.</div>
-<div class="span-2 form-actions"><a class="btn btn-secondary" href="{{ url_for('tickets') }}">Bekor qilish</a><button class="btn btn-primary" type="submit">Murojaatni yuborish →</button></div>
-</form></section>
+<main>
+  <div>
+    <a class="back-btn" href="{{ url_for('tickets') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Murojaatlar ro‘yxatiga qaytish
+    </a>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1>Yangi murojaat yaratish</h1>
+      <p class="sub">Muammo va nosozlik haqida iloji boricha aniq ma'lumot bering.</p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card pad">
+      <form method="post">
+        <div class="form-group">
+          <label for="title">Murojaat sarlavhasi *</label>
+          <input type="text" id="title" name="title" required maxlength="160" placeholder="Masalan: 204-auditoriyada kompyuter yoqilmayapti" autofocus>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="category">Muammo toifasi (Kategoriya) *</label>
+            <select id="category" name="category" required>
+              {% for key, label in categories.items() %}
+              <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="device_id">Tegishli xona va qurilma (ixtiyoriy)</label>
+            <select id="device_id" name="device_id">
+              <option value="">Qurilma tanlanmagan (Umumiy muammo)</option>
+              {% for room in rooms %}
+                {% if room.devices %}
+                <optgroup label="📍 {{ room.number }}">
+                  {% for dev in room.devices %}
+                  <option value="{{ dev.id }}">{{ dev.name }} · {{ dev.inventory_number }}</option>
+                  {% endfor %}
+                </optgroup>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="impact">Ta'sir doirasi</label>
+            <select id="impact" name="impact">
+              <option value="1">1 — Bitta kompyuter / foydalanuvchi</option>
+              <option value="2">2 — Bir nechta foydalanuvchi</option>
+              <option value="3">3 — Butun auditoriya / tarmoq</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="severity">Jiddiylik darajasi</label>
+            <select id="severity" name="severity">
+              <option value="1">1 — Ishga unchalik xalaqit bermaydi</option>
+              <option value="2">2 — O'rta (ishlash qiyinlashgan)</option>
+              <option value="3">3 — Yuqori (ish jarayoni to'liq to'xtagan)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Muammo tavsifi *</label>
+          <textarea id="description" name="description" rows="5" required placeholder="Nima sodir bo'ldi? Qachondan beri? Qanday xato yozuvi chiqmoqda?"></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px">
+          <a class="btn btn-secondary" href="{{ url_for('tickets') }}">Bekor qilish</a>
+          <button class="btn btn-primary" type="submit">Murojaatni yuborish →</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card pad">
+      <div class="hd">
+        <div>
+          <h2>Ustuvorlik algoritmi</h2>
+          <p>Avtomatik hisoblash qoidasi</p>
+        </div>
+      </div>
+      <p style="font-size:13.5px;line-height:1.6;color:var(--mute);margin-bottom:18px">
+        Tizim ta'sir doirasi (1–3) va muammoning jiddiylik ballari (1–3) yig'indisi orqali murojaat ustuvorligini avtomatik belgilaydi:
+      </p>
+      <ul style="list-style:none;padding:0;margin:0 0 20px 0;font-size:13.5px">
+        <li style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">
+          <span>Ball ≥ 5:</span>
+          <span class="b danger">Yuqori</span>
+        </li>
+        <li style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">
+          <span>Ball = 4:</span>
+          <span class="b pr">O'rta</span>
+        </li>
+        <li style="padding:8px 0;display:flex;justify-content:space-between">
+          <span>Ball ≤ 3:</span>
+          <span class="b ok">Past</span>
+        </li>
+      </ul>
+      <div class="tip">
+        <b>Maslahat</b>
+        Muammoni aniqroq bayon qilish IT mutaxassisiga to'g'ri ehtiyot qismlar yoki dasturiy yechimlar bilan tez yetib kelishiga yordam beradi.
+      </div>
+    </div>
+  </div>
+</main>
 {% endblock %}

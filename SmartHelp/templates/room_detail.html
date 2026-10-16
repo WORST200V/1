@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}SmartHelp — {{ room.number }} qurilmalari{% endblock %}
+{% block content %}
+<main>
+  <div>
+    <a class="back-btn" href="{{ url_for('devices') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      {{ t('back_to_rooms') }}
+    </a>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1>{{ room.number }}</h1>
+      <p class="sub">{{ room.floor or 'Bino / Qavat belgilanmagan' }}{% if room.notes %} · {{ room.notes }}{% endif %}</p>
+    </div>
+    {% if current_user.role in ['admin', 'superadmin'] %}
+    <button class="cta" type="button" onclick="openModal('addDeviceModal')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      {{ t('add_device') }}
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="card pad">
+    <div class="hd">
+      <div>
+        <h2>{{ t('room_devices_list') }}</h2>
+        <p>{{ t('total_devices_prefix') }} {{ room.active_devices|length }} {{ t('total_devices_suffix') }}</p>
+      </div>
+    </div>
+
+    {% if room.active_devices %}
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t('col_device_name') }}</th>
+            <th>{{ t('col_inventory_number') }}</th>
+            <th>{{ t('col_type') }}</th>
+            <th>{{ t('col_device_status') }}</th>
+            <th>QO‘SHIMCHA IZOH</th>
+            {% if current_user.role in ['admin', 'superadmin'] %}
+            <th style="text-align:right">{{ t('col_actions') }}</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in room.active_devices %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="type-icon-pill">
+                  {% if d.device_type == 'computer' %}💻
+                  {% elif d.device_type == 'printer' %}🖨️
+                  {% elif d.device_type == 'network' %}🌐
+                  {% else %}📦
+                  {% endif %}
+                </span>
+                <b>{{ d.name }}</b>
+              </div>
+            </td>
+            <td><code>{{ d.inventory_number }}</code></td>
+            <td>{{ get_category_label(d.device_type) }}</td>
+            <td>
+              {% if d.status == 'working' %}
+              <span class="b ok">{{ t('status_working') }}</span>
+              {% elif d.status == 'repair' %}
+              <span class="b warn">{{ t('status_repair') }}</span>
+              {% else %}
+              <span class="b danger">{{ t('status_broken') }}</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--mute);font-size:13px">{{ d.notes or '-' }}</td>
+            {% if current_user.role in ['admin', 'superadmin'] %}
+            <td style="text-align:right">
+              <div style="display:inline-flex;gap:8px;align-items:center">
+                <button class="btn btn-secondary btn-sm" type="button" onclick="openEditDeviceModal({{ d.id }}, '{{ d.name }}', '{{ d.inventory_number }}', '{{ d.device_type }}', '{{ d.status }}', '{{ d.notes or '' }}')">
+                  {{ t('edit') }}
+                </button>
+                <form method="post" action="{{ url_for('delete_device', device_id=d.id) }}" onsubmit="return confirm('{{ t('confirm_delete_device') }}');" style="margin:0">
+                  <button class="btn btn-outline-danger btn-sm" type="submit">{{ t('delete') }}</button>
+                </form>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:48px 16px;color:var(--mute)">
+      <p style="font-size:16px;font-weight:700;margin-bottom:8px">{{ t('no_devices_in_room') }}</p>
+      <p style="font-size:13px;margin-bottom:20px">Ushbu auditoriyaga hali hech qanday qurilma biriktirilmagan.</p>
+      {% if current_user.role in ['admin', 'superadmin'] %}
+      <button class="btn btn-primary btn-sm" type="button" onclick="openModal('addDeviceModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        {{ t('add_device') }}
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</main>
+
+<!-- QURILMA QO'SHISH MODALI -->
+{% if current_user.role in ['admin', 'superadmin'] %}
+<div class="modal-backdrop" id="addDeviceModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>{{ room.number }} ga {{ t('add_device') }}</h2>
+      <button class="modal-close" type="button" onclick="closeModal('addDeviceModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('new_room_device', room_id=room.id) }}">
+      <div class="form-group">
+        <label for="devName">{{ t('col_device_name') }} *</label>
+        <input type="text" id="devName" name="name" required placeholder="Masalan: O‘qituvchi kompyuteri HP" autofocus>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="devInv">{{ t('col_inventory_number') }} *</label>
+          <input type="text" id="devInv" name="inventory_number" required placeholder="Masalan: INV-2024-001">
+        </div>
+        <div class="form-group">
+          <label for="devType">{{ t('col_type') }}</label>
+          <select id="devType" name="device_type">
+            {% for key, label in categories_translated.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="devStatus">{{ t('col_device_status') }}</label>
+        <select id="devStatus" name="status">
+          <option value="working">{{ t('status_working') }}</option>
+          <option value="repair">{{ t('status_repair') }}</option>
+          <option value="broken">{{ t('status_broken') }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="devNotes">Qo‘shimcha izoh</label>
+        <textarea id="devNotes" name="notes" rows="2" placeholder="Model, IP manzil, xususiyatlar..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px">
+        <button class="btn btn-secondary" type="button" onclick="closeModal('addDeviceModal')">{{ t('cancel') }}</button>
+        <button class="btn btn-primary" type="submit">{{ t('save') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- QURILMANI TAHRIRLASH MODALI -->
+<div class="modal-backdrop" id="editDeviceModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Qurilmani tahrirlash</h2>
+      <button class="modal-close" type="button" onclick="closeModal('editDeviceModal')">×</button>
+    </div>
+    <form method="post" id="editDeviceForm" action="">
+      <div class="form-group">
+        <label for="editDevName">{{ t('col_device_name') }} *</label>
+        <input type="text" id="editDevName" name="name" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editDevInv">{{ t('col_inventory_number') }} *</label>
+          <input type="text" id="editDevInv" name="inventory_number" required>
+        </div>
+        <div class="form-group">
+          <label for="editDevType">{{ t('col_type') }}</label>
+          <select id="editDevType" name="device_type">
+            {% for key, label in categories_translated.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="editDevStatus">{{ t('col_device_status') }}</label>
+        <select id="editDevStatus" name="status">
+          <option value="working">{{ t('status_working') }}</option>
+          <option value="repair">{{ t('status_repair') }}</option>
+          <option value="broken">{{ t('status_broken') }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editDevNotes">Qo‘shimcha izoh</label>
+        <textarea id="editDevNotes" name="notes" rows="2"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px">
+        <button class="btn btn-secondary" type="button" onclick="closeModal('editDeviceModal')">{{ t('cancel') }}</button>
+        <button class="btn btn-primary" type="submit">{{ t('save_changes') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditDeviceModal(id, name, inv, type, status, notes) {
+  document.getElementById('editDeviceForm').action = '/devices/' + id + '/edit';
+  document.getElementById('editDevName').value = name;
+  document.getElementById('editDevInv').value = inv;
+  document.getElementById('editDevType').value = type;
+  document.getElementById('editDevStatus').value = status;
+  document.getElementById('editDevNotes').value = notes;
+  openModal('editDeviceModal');
+}
+</script>
+{% endif %}
+{% endblock %}

@@ -1,16 +1,120 @@
 {% extends "base.html" %}
-{% block title %}Murojaatlar — SmartHelp{% endblock %}
+{% block title %}SmartHelp — {{ t('tickets_title') }}{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">MUAMMOLAR MARKAZI</span><h1>Murojaatlar</h1><p class="muted">Murojaatlarni qidiring, saralang va holatini kuzating.</p></div><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Yangi murojaat</a></div>
-<section class="panel">
-<form method="get" class="filters">
-<input type="search" name="q" value="{{ search }}" placeholder="Murojaatni qidirish...">
-<select name="status"><option value="">Barcha holatlar</option>{% for key,label in statuses.items() %}<option value="{{ key }}" {% if selected_status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-<select name="category"><option value="">Barcha kategoriyalar</option>{% for key,label in categories.items() %}<option value="{{ key }}" {% if selected_category==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-<button class="btn btn-secondary" type="submit">Filtrlash</button><a class="clear-link" href="{{ url_for('tickets') }}">Tozalash</a>
-</form>
-{% if tickets %}<div class="table-wrap"><table><thead><tr><th>ID / Murojaat</th><th>Yaratuvchi</th><th>Ustuvorlik</th><th>Mas'ul</th><th>Holat</th><th>Sana</th></tr></thead><tbody>
-{% for t in tickets %}<tr><td><a class="ticket-link" href="{{ url_for('ticket_detail', ticket_id=t.id) }}"><b>#{{ t.id }} · {{ t.title }}</b><small>{{ categories.get(t.category, t.category) }}</small></a></td><td>{{ t.creator.name }}</td><td><span class="priority priority-{{ t.priority|lower|replace(' ', '-') }}">{{ t.priority }}</span></td><td>{{ t.technician.name if t.technician else 'Biriktirilmagan' }}</td><td><span class="status status-{{ t.status }}">{{ statuses[t.status] }}</span></td><td>{{ t.created_at.strftime('%d.%m.%Y %H:%M') }}</td></tr>{% endfor %}
-</tbody></table></div>{% else %}<div class="empty-state"><div class="empty-icon">⌕</div><h3>Murojaatlar topilmadi</h3><p>Filtrlarni o'zgartiring yoki yangi murojaat yarating.</p></div>{% endif %}
-</section>
+<main>
+  <div class="top">
+    <div>
+      <h1>{{ t('tickets_title') }}</h1>
+      <p class="sub">{{ t('tickets_sub') }}</p>
+    </div>
+    <a class="cta" href="{{ url_for('new_ticket') }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      {{ t('new_ticket') }}
+    </a>
+  </div>
+
+  <!-- Zamonaviy va ixcham filtr paneli -->
+  <form method="get" class="modern-filter-bar">
+    <div class="filter-search-box">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" name="q" value="{{ search }}" placeholder="{{ t('search_placeholder') }}">
+    </div>
+
+    <div class="filter-select-box">
+      <select name="status">
+        <option value="">{{ t('all_statuses') }}</option>
+        {% for key, label in statuses_translated.items() %}
+        <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-select-box">
+      <select name="category">
+        <option value="">{{ t('all_categories') }}</option>
+        {% for key, label in categories_translated.items() %}
+        <option value="{{ key }}" {% if selected_category == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-btn-group">
+      <button class="btn btn-primary filter-submit-btn" type="submit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        {{ t('filter_btn') }}
+      </button>
+
+      {% if search or selected_status or selected_category %}
+      <a href="{{ url_for('tickets') }}" class="btn btn-secondary filter-clear-btn" title="{{ t('clear_filters') }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        {{ t('clear_filters') }}
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="card pad">
+    {% if tickets %}
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t('col_ticket') }}</th>
+            <th>{{ t('col_creator') }}</th>
+            <th>{{ t('col_priority') }}</th>
+            <th>{{ t('col_technician') }}</th>
+            <th>{{ t('col_status') }}</th>
+            <th>{{ t('col_date') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t_item in tickets %}
+          <tr>
+            <td>
+              <a href="{{ url_for('ticket_detail', ticket_id=t_item.id) }}" style="color:inherit">
+                <b>#{{ t_item.id }} · {{ t_item.title }}</b>
+                <small>{{ get_category_label(t_item.category) }}</small>
+              </a>
+            </td>
+            <td>{{ t_item.creator.name }}</td>
+            <td>
+              {% if t_item.priority == 'Yuqori' %}
+              <span class="b danger">{{ t_item.priority }}</span>
+              {% elif t_item.priority == "O'rta" or t_item.priority == "O‘rta" %}
+              <span class="b pr">{{ t_item.priority }}</span>
+              {% else %}
+              <span class="b ok">{{ t_item.priority }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if t_item.technician %}
+              <b>{{ t_item.technician.name }}</b>
+              {% else %}
+              <span style="color:var(--mute);font-weight:500">Biriktirilmagan</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if t_item.status in ['resolved', 'closed'] %}
+              <span class="b ok">{{ get_status_label(t_item.status) }}</span>
+              {% elif t_item.status == 'in_progress' %}
+              <span class="b pr">{{ get_status_label(t_item.status) }}</span>
+              {% else %}
+              <span class="b new">{{ get_status_label(t_item.status) }}</span>
+              {% endif %}
+            </td>
+            <td class="d">{{ t_item.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px 10px;color:var(--mute)">
+      <p style="font-size:18px;font-weight:700;margin-bottom:8px">{{ t('no_tickets') }}</p>
+      <p style="font-size:14px;margin-bottom:20px">Qidiruv parametrlarini o‘zgartiring yoki yangi murojaat yarating.</p>
+      <a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Murojaat yaratish</a>
+    </div>
+    {% endif %}
+  </div>
+</main>
 {% endblock %}

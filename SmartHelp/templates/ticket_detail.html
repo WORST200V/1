@@ -1,19 +1,203 @@
 {% extends "base.html" %}
 {% block title %}Murojaat #{{ ticket.id }} — SmartHelp{% endblock %}
 {% block content %}
-<div class="page-heading"><div><a class="back-link" href="{{ url_for('tickets') }}">← Murojaatlarga qaytish</a><span class="eyebrow">MUROJAAT #{{ ticket.id }}</span><h1>{{ ticket.title }}</h1><p class="muted">Yaratilgan: {{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }} · {{ ticket.creator.name }}</p></div><span class="status status-{{ ticket.status }} large-status">{{ statuses[ticket.status] }}</span></div>
-<div class="detail-grid"><section class="panel"><div class="panel-heading"><h2>Muammo tafsilotlari</h2><span class="priority priority-{{ ticket.priority|lower|replace(' ', '-') }}">{{ ticket.priority }} ustuvorlik</span></div>
-<div class="detail-meta"><div><small>Kategoriya</small><b>{{ categories.get(ticket.category, ticket.category) }}</b></div><div><small>Qurilma</small><b>{{ ticket.device.name if ticket.device else 'Ko‘rsatilmagan' }}</b></div><div><small>Ta'sir / jiddiylik</small><b>{{ ticket.impact }} / 3 · {{ ticket.severity }} / 3</b></div><div><small>Mas'ul mutaxassis</small><b>{{ ticket.technician.name if ticket.technician else 'Biriktirilmagan' }}</b></div></div>
-<h3 class="subheading">Tavsif</h3><p class="description-text">{{ ticket.description }}</p>
-{% if ticket.resolution %}<h3 class="subheading">Yechim</h3><p class="description-text">{{ ticket.resolution }}</p>{% endif %}
-{% if current_user.role in ['admin','technician'] %}<hr class="soft-divider"><h2>Holat va mas'ulni yangilash</h2><form method="post" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}" class="form">
-<label>Holat<select name="status">{% for key,label in statuses.items() %}<option value="{{ key }}" {% if ticket.status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-<label>Mas'ul mutaxassis<select name="technician_id"><option value="">O'zgarishsiz qoldirish</option>{% for tech in technicians %}<option value="{{ tech.id }}" {% if ticket.technician_id==tech.id %}selected{% endif %}>{{ tech.name }} · {{ roles[tech.role] }}</option>{% endfor %}</select></label>
-<label>Yechim / bajarilgan ish<textarea name="resolution" rows="3" placeholder="Qanday ish bajarildi?">{{ ticket.resolution or '' }}</textarea></label>
-<label>Tarix uchun izoh (ixtiyoriy)<input name="comment" placeholder="Masalan: kabel qayta ulandi"></label>
-<button class="btn btn-primary" type="submit">O'zgarishlarni saqlash</button></form>{% endif %}
-</section>
-<aside class="panel"><div class="panel-heading"><h2>O'zgarishlar tarixi</h2></div>
-{% if ticket.history %}<div class="timeline">{% for h in ticket.history|sort(attribute='changed_at', reverse=true) %}<div class="timeline-item"><span class="timeline-dot"></span><div><b>{{ statuses.get(h.new_status, h.new_status) }}</b><p>{{ h.actor.name }}{% if h.comment %} · {{ h.comment }}{% endif %}</p><small>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</small></div></div>{% endfor %}</div>{% else %}<p class="muted">Hozircha tarix mavjud emas.</p>{% endif %}
-</aside></div>
+<main>
+  <div>
+    <a class="back-btn" href="{{ url_for('tickets') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Murojaatlar ro‘yxatiga qaytish
+    </a>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1>#{{ ticket.id }} · {{ ticket.title }}</h1>
+      <p class="sub">Yaratuvchi: <b>{{ ticket.creator.name }}</b> · {{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      {% if ticket.priority == 'Yuqori' %}
+      <span class="b danger" style="padding:8px 14px;font-size:13px">{{ ticket.priority }} ustuvorlik</span>
+      {% elif ticket.priority == "O'rta" or ticket.priority == "O‘rta" %}
+      <span class="b pr" style="padding:8px 14px;font-size:13px">{{ ticket.priority }} ustuvorlik</span>
+      {% else %}
+      <span class="b ok" style="padding:8px 14px;font-size:13px">{{ ticket.priority }} ustuvorlik</span>
+      {% endif %}
+
+      {% if ticket.status in ['resolved', 'closed'] %}
+      <span class="b ok" style="padding:8px 14px;font-size:13px">{{ statuses[ticket.status] }}</span>
+      {% elif ticket.status == 'pending_approval' %}
+      <span class="b pending" style="padding:8px 14px;font-size:13px">Tasdiq kutilmoqda</span>
+      {% elif ticket.status == 'in_progress' %}
+      <span class="b pr" style="padding:8px 14px;font-size:13px">{{ statuses[ticket.status] }}</span>
+      {% else %}
+      <span class="b new" style="padding:8px 14px;font-size:13px">{{ statuses[ticket.status] }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Agar Admin yoki Superadmin bo'lsa va murojaat tasdiqlash kutilayotgan bo'lsa, tezkor tasdiqlash bloki -->
+  {% if current_user.role in ['admin', 'superadmin'] and ticket.status == 'pending_approval' %}
+  <div class="approval-banner" style="margin-bottom:24px">
+    <div class="approval-header">
+      <h3>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        IT mutaxassisi ishni yakunladi va tasdiqlashingizni kutmoqda
+      </h3>
+    </div>
+    <p style="font-size:14px;margin:0 0 14px 0;color:var(--text)">
+      Qayd etilgan yechim: <b>{{ ticket.resolution or 'Yechim qayd etilgan' }}</b>
+    </p>
+    <form method="post" action="{{ url_for('approve_ticket', ticket_id=ticket.id) }}">
+      <button class="btn btn-success" type="submit">✓ Tasdiqlash va Murojaatni yopish</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="cols">
+    <div class="card pad">
+      <div class="hd">
+        <div>
+          <h2>Muammo tafsilotlari</h2>
+          <p>Murojaat to‘liq parametrlari va tavsifi</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;background:var(--head);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:24px">
+        <div>
+          <small style="color:var(--mute);font-size:12px;display:block">Kategoriya</small>
+          <b style="font-size:14px">{{ categories.get(ticket.category, ticket.category) }}</b>
+        </div>
+        <div>
+          <small style="color:var(--mute);font-size:12px;display:block">Qurilma / Xona</small>
+          <b style="font-size:14px">
+            {% if ticket.device %}
+              {{ ticket.device.name }}
+              {% if ticket.device.room_rel %} ({{ ticket.device.room_rel.number }}){% endif %}
+            {% else %}
+              Ko‘rsatilmagan
+            {% endif %}
+          </b>
+        </div>
+        <div>
+          <small style="color:var(--mute);font-size:12px;display:block">Ta'sir / Jiddiylik</small>
+          <b style="font-size:14px">{{ ticket.impact }} / 3 ta'sir · {{ ticket.severity }} / 3 jiddiy</b>
+        </div>
+        <div>
+          <small style="color:var(--mute);font-size:12px;display:block">Mas'ul IT mutaxassisi</small>
+          <b style="font-size:14px">{{ ticket.technician.name if ticket.technician else 'Biriktirilmagan' }}</b>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:15px;margin:0 0 8px 0;color:var(--ink)">Muammo tavsifi</h3>
+        <p style="font-size:14px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px">{{ ticket.description }}</p>
+      </div>
+
+      {% if ticket.resolution %}
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:15px;margin:0 0 8px 0;color:var(--ok)">Yechim / Bajarilgan ish</h3>
+        <p style="font-size:14px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--okbg);border:1px solid var(--line);border-radius:10px;padding:16px">{{ ticket.resolution }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Murojaatni yangilash formasi -->
+      {% if current_user.role in ['admin', 'superadmin', 'technician'] %}
+      <div style="border-top:1px solid var(--line);padding-top:24px;margin-top:24px">
+        <h2 style="font-size:18px;margin:0 0 16px 0;color:var(--ink)">
+          {% if current_user.role == 'technician' %}
+          Holat va yechimni kiritish
+          {% else %}
+          Holat va mas'ulni yangilash
+          {% endif %}
+        </h2>
+
+        <form method="post" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status">Murojaat holati</label>
+              <select id="status" name="status">
+                {% if current_user.role == 'technician' %}
+                  <!-- IT mutaxassis faqat biriktirilgan, jarayonda va tasdiqqa yuborishni tanlay oladi -->
+                  <option value="assigned" {% if ticket.status == 'assigned' %}selected{% endif %}>Biriktirilgan</option>
+                  <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>Jarayonda</option>
+                  <option value="pending_approval" {% if ticket.status == 'pending_approval' %}selected{% endif %}>Hal qilindi (Admin tasdig‘iga yuborish)</option>
+                {% else %}
+                  <!-- Administrator barcha holatlarni boshqarishi mumkin -->
+                  {% for key, label in statuses.items() %}
+                  <option value="{{ key }}" {% if ticket.status == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            {% if current_user.role in ['admin', 'superadmin'] %}
+            <div class="form-group">
+              <label for="technician_id">Mas'ul mutaxassis</label>
+              <select id="technician_id" name="technician_id">
+                <option value="">O‘zgarishsiz qoldirish</option>
+                {% for tech in technicians %}
+                <option value="{{ tech.id }}" {% if ticket.technician_id == tech.id %}selected{% endif %}>{{ tech.name }} · {{ roles[tech.role] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="resolution">Bajarilgan ish / Yechim tavsifi</label>
+            <textarea id="resolution" name="resolution" rows="3" placeholder="Muammo qanday bartaraf etildi? Mutaxassis bajargan ishini shu yerga yozadi.">{{ ticket.resolution or '' }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="comment">Tarix uchun qisqa izoh (ixtiyoriy)</label>
+            <input type="text" id="comment" name="comment" placeholder="Masalan: ehtiyot qism yangisiga almashtirildi">
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-primary" type="submit">O‘zgarishlarni saqlash</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card pad">
+      <div class="hd">
+        <div>
+          <h2>O‘zgarishlar tarixi</h2>
+          <p>Murojaat hayotiy sikli</p>
+        </div>
+      </div>
+
+      {% if ticket.history %}
+      <div style="display:flex;flex-direction:column;gap:18px;margin-top:12px">
+        {% for h in ticket.history|sort(attribute='changed_at', reverse=true) %}
+        <div style="display:flex;gap:14px;border-left:2px solid var(--blue);padding-left:14px">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              {% if h.new_status in ['resolved', 'closed'] %}
+              <span class="b ok" style="font-size:11px">{{ statuses.get(h.new_status, h.new_status) }}</span>
+              {% elif h.new_status == 'pending_approval' %}
+              <span class="b pending" style="font-size:11px">Tasdiq kutilmoqda</span>
+              {% elif h.new_status == 'in_progress' %}
+              <span class="b pr" style="font-size:11px">{{ statuses.get(h.new_status, h.new_status) }}</span>
+              {% else %}
+              <span class="b new" style="font-size:11px">{{ statuses.get(h.new_status, h.new_status) }}</span>
+              {% endif %}
+              <small style="color:var(--mute);font-size:12px">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</small>
+            </div>
+            <p style="margin:4px 0 0 0;font-size:13px;font-weight:600">{{ h.actor.name }}</p>
+            {% if h.comment %}
+            <p style="margin:2px 0 0 0;font-size:12.5px;color:var(--mute)">{{ h.comment }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:var(--mute);font-size:13px">Hozircha tarix yozuvlari mavjud emas.</p>
+      {% endif %}
+    </div>
+  </div>
+</main>
 {% endblock %}

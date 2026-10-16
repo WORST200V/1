@@ -1,12 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Qurilma qo'shish — SmartHelp{% endblock %}
+{% block title %}SmartHelp — Qurilma qo'shish{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">TEXNIK INVENTAR</span><h1>Qurilma qo'shish</h1></div><a class="btn btn-secondary" href="{{ url_for('devices') }}">← Orqaga</a></div>
-<section class="form-panel"><form method="post" class="form">
-<label>Qurilma nomi<input name="name" required maxlength="120" placeholder="Masalan: 204-auditoriya kompyuteri"></label>
-<label>Inventar raqami<input name="inventory_number" required maxlength="80" placeholder="Masalan: PC-204-01"></label>
-<label>Turi<select name="device_type">{% for key,label in categories.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
-<label>Xona / joylashuv<input name="room" maxlength="80" placeholder="Masalan: 204-auditoriya"></label>
-<label>Izoh<textarea name="notes" rows="3" placeholder="Modeli, IP manzili yoki boshqa eslatma"></textarea></label>
-<button class="btn btn-primary" type="submit">Qurilmani saqlash</button></form></section>
+<main>
+  <div class="top">
+    <div>
+      <h1>Yangi qurilma qo'shish</h1>
+      <p class="sub">Universitet inventariga kompyuter yoki boshqa uskunani ro'yxatga olish.</p>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('devices') }}">← Orqaga</a>
+  </div>
+
+  <div class="card pad form-panel">
+    <form method="post">
+      <div class="form-group">
+        <label for="name">Qurilma nomi</label>
+        <input type="text" id="name" name="name" required maxlength="120" placeholder="Masalan: 204-auditoriya asosiy kompyuteri" autofocus>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inventory_number">Inventar raqami (unikal)</label>
+          <input type="text" id="inventory_number" name="inventory_number" required maxlength="80" placeholder="Masalan: PC-204-01">
+        </div>
+
+        <div class="form-group">
+          <label for="device_type">Qurilma turi</label>
+          <select id="device_type" name="device_type">
+            {% for key, label in categories.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="room">Xona / Joylashuv</label>
+        <input type="text" id="room" name="room" maxlength="80" placeholder="Masalan: 204-auditoriya yoki Server xona">
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Qo'shimcha izoh yoki parametrlar</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Model, IP manzil, MAC manzil yoki xususiyatlar"></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px">
+        <a class="btn btn-secondary" href="{{ url_for('devices') }}">Bekor qilish</a>
+        <button class="btn btn-primary" type="submit">Qurilmani saqlash</button>
+      </div>
+    </form>
+  </div>
+</main>
 {% endblock %}

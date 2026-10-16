@@ -1,23 +1,219 @@
 {% extends "base.html" %}
-{% block title %}Bosh sahifa — SmartHelp{% endblock %}
+{% block title %}SmartHelp — Bosh sahifa{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">UMUMIY KO'RINISH</span><h1>Salom, {{ current_user.name.split(' ')[0] }}!</h1><p class="muted">Texnik murojaatlaringiz holati va so'nggi faollik.</p></div><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Murojaat yaratish</a></div>
-<section class="stats-grid">
-  <article class="stat-card"><div class="stat-label">Jami murojaatlar <span class="stat-symbol purple">▤</span></div><div class="stat-number">{{ total }}</div><div class="stat-foot">Siz ko'rishingiz mumkin bo'lgan murojaatlar</div></article>
-  <article class="stat-card"><div class="stat-label">Ochiq murojaatlar <span class="stat-symbol orange">◷</span></div><div class="stat-number">{{ open_count }}</div><div class="stat-foot">Yangi yoki hal qilinayotgan</div></article>
-  <article class="stat-card"><div class="stat-label">Hal qilingan <span class="stat-symbol green">✓</span></div><div class="stat-number">{{ resolved_count }}</div><div class="stat-foot">Yakunlangan ishlar</div></article>
-  {% if device_count is not none %}<article class="stat-card"><div class="stat-label">Qurilmalar <span class="stat-symbol blue">⌘</span></div><div class="stat-number">{{ device_count }}</div><div class="stat-foot">Inventar ro'yxatida</div></article>{% endif %}
-</section>
-<div class="content-grid">
-<section class="panel"><div class="panel-heading"><div><h2>So'nggi murojaatlar</h2><p class="muted">Oxirgi yaratilgan murojaatlar</p></div><a class="text-link" href="{{ url_for('tickets') }}">Barchasi →</a></div>
-{% if tickets %}
-<div class="table-wrap"><table><thead><tr><th>Murojaat</th><th>Ustuvorlik</th><th>Holat</th><th>Sana</th></tr></thead><tbody>
-{% for t in tickets %}<tr><td><a class="ticket-link" href="{{ url_for('ticket_detail', ticket_id=t.id) }}"><b>#{{ t.id }} · {{ t.title }}</b><small>{{ categories.get(t.category, t.category) }}</small></a></td><td><span class="priority priority-{{ t.priority|lower|replace(' ', '-') }}">{{ t.priority }}</span></td><td><span class="status status-{{ t.status }}">{{ statuses[t.status] }}</span></td><td>{{ t.created_at.strftime('%d.%m.%Y') }}</td></tr>{% endfor %}
-</tbody></table></div>
-{% else %}<div class="empty-state"><div class="empty-icon">＋</div><h3>Hali murojaat yo'q</h3><p>Birinchi murojaatingizni yarating.</p><a class="btn btn-primary" href="{{ url_for('new_ticket') }}">Murojaat yaratish</a></div>{% endif %}
-</section>
-<aside class="panel category-panel"><div class="panel-heading"><div><h2>Kategoriyalar</h2><p class="muted">Murojaatlar taqsimoti</p></div></div>
-{% for item in category_counts %}<div class="category-row"><div><span>{{ item.label }}</span><b>{{ item.count }}</b></div><div class="progress"><span style="width: {{ (item.count / total * 100) if total else 0 }}%"></span></div></div>{% endfor %}
-<div class="tip-box"><b>Maslahat</b><p>Muammoni aniq tasvirlash mutaxassisga uni tezroq hal qilishga yordam beradi.</p></div>
-</aside></div>
+<main>
+  <div class="top">
+    <div>
+      <h1>Salom, {{ current_user.name.split(' ')[0] }}!</h1>
+      <p class="sub">
+        {% if current_user.role == 'technician' %}
+        Sizga biriktirilgan texnik murojaatlar holati va ish jarayoni.
+        {% elif current_user.role in ['admin', 'superadmin'] %}
+        Tizim administratori boshqaruv paneli va umumiy monitoring.
+        {% else %}
+        Texnik murojaatlaringiz holati va so‘nggi faollik.
+        {% endif %}
+      </p>
+    </div>
+    {% if current_user.role == 'user' %}
+    <a class="cta" href="{{ url_for('new_ticket') }}">+ Murojaat yaratish</a>
+    {% endif %}
+  </div>
+
+  <!-- Admin uchun tasdiqlash kutilayotgan murojaatlar xabarnomasi -->
+  {% if current_user.role in ['admin', 'superadmin'] and pending_tickets %}
+  <section class="approval-banner">
+    <div class="approval-header">
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        Mutaxassislar tomonidan hal qilingan va tasdiqlash kutilayotgan murojaatlar ({{ pending_tickets|length }})
+      </h3>
+      <span style="font-size:12.5px;color:var(--mute)">Admin tasdig‘i talab etiladi</span>
+    </div>
+    {% for pt in pending_tickets %}
+    <div class="approval-item">
+      <div>
+        <a href="{{ url_for('ticket_detail', ticket_id=pt.id) }}" style="font-weight:700;color:var(--ink)">
+          #{{ pt.id }} · {{ pt.title }}
+        </a>
+        <small style="display:block;color:var(--mute);margin-top:2px">
+          Mutaxassis: <b>{{ pt.technician.name if pt.technician else '—' }}</b> · Yechim: {{ pt.resolution or 'Yechim qayd etilgan' }}
+        </small>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <form method="post" action="{{ url_for('approve_ticket', ticket_id=pt.id) }}" style="margin:0">
+          <button class="btn btn-success btn-sm" type="submit">✓ Tasdiqlash va Yopish</button>
+        </form>
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('ticket_detail', ticket_id=pt.id) }}">Ko‘rish</a>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="stats">
+    <div class="card stat">
+      <div class="t">
+        {{ stats.card1_label }}
+        <span class="ic" style="background:var(--pubg);color:var(--pu)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+        </span>
+      </div>
+      <div class="n">{{ stats.card1_val }}</div>
+      <small>{{ stats.card1_sub }}</small>
+    </div>
+
+    <div class="card stat">
+      <div class="t">
+        {{ stats.card2_label }}
+        <span class="ic" style="background:var(--warnbg);color:var(--warn)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </span>
+      </div>
+      <div class="n">{{ stats.card2_val }}</div>
+      <small>{{ stats.card2_sub }}</small>
+    </div>
+
+    <div class="card stat">
+      <div class="t">
+        {{ stats.card3_label }}
+        <span class="ic" style="background:var(--okbg);color:var(--ok)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>
+        </span>
+      </div>
+      <div class="n">{{ stats.card3_val }}</div>
+      <small>{{ stats.card3_sub }}</small>
+    </div>
+
+    {% if stats.card4_label %}
+    <div class="card stat">
+      <div class="t">
+        {{ stats.card4_label }}
+        <span class="ic" style="background:var(--blbg);color:var(--blue)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+        </span>
+      </div>
+      <div class="n">{{ stats.card4_val }}</div>
+      <small>{{ stats.card4_sub }}</small>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="cols">
+    <div class="card pad">
+      <div class="hd">
+        <div>
+          <h2>
+            {% if current_user.role == 'technician' %}
+            Menga biriktirilgan murojaatlar
+            {% else %}
+            So‘nggi murojaatlar
+            {% endif %}
+          </h2>
+          <p>
+            {% if current_user.role == 'technician' %}
+            Faqat siz mas'ul etib belgilangan vazifalar
+            {% else %}
+            Oxirgi yaratilgan murojaatlar
+            {% endif %}
+          </p>
+        </div>
+        <a href="{{ url_for('tickets') }}">Barchasi →</a>
+      </div>
+
+      {% if tickets %}
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>MUROJAAT</th>
+              <th>USTUVORLIK</th>
+              <th>HOLAT</th>
+              <th>SANA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr>
+              <td>
+                <a href="{{ url_for('ticket_detail', ticket_id=t.id) }}" style="color:inherit">
+                  <b>#{{ t.id }} · {{ t.title }}</b>
+                  <small>{{ categories.get(t.category, t.category) }}</small>
+                </a>
+              </td>
+              <td>
+                {% if t.priority == 'Yuqori' %}
+                <span class="b danger">{{ t.priority }}</span>
+                {% elif t.priority == "O'rta" or t.priority == "O‘rta" %}
+                <span class="b pr">{{ t.priority }}</span>
+                {% else %}
+                <span class="b ok">{{ t.priority }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if t.status in ['resolved', 'closed'] %}
+                <span class="b ok">{{ statuses[t.status] }}</span>
+                {% elif t.status == 'pending_approval' %}
+                <span class="b pending">Tasdiq kutilmoqda</span>
+                {% elif t.status == 'in_progress' %}
+                <span class="b pr">{{ statuses[t.status] }}</span>
+                {% else %}
+                <span class="b new">{{ statuses[t.status] }}</span>
+                {% endif %}
+              </td>
+              <td class="d">{{ t.created_at.strftime('%d.%m.%Y') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:36px 12px;color:var(--mute)">
+        <p style="font-size:16px;font-weight:700;margin-bottom:8px">Hozircha murojaatlar yo‘q</p>
+        <p style="font-size:13px;margin-bottom:18px">
+          {% if current_user.role == 'technician' %}
+          Sizga hozircha yangi topshiriq biriktirilmagan.
+          {% else %}
+          Yangi texnik nosozlik yoki murojaat yuboring.
+          {% endif %}
+        </p>
+        {% if current_user.role == 'user' %}
+        <a class="btn btn-primary" href="{{ url_for('new_ticket') }}">+ Murojaat yaratish</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card pad">
+      <div class="hd">
+        <div>
+          <h2>Kategoriyalar</h2>
+          <p>Murojaatlar taqsimoti</p>
+        </div>
+      </div>
+      <ul class="cat">
+        {% for item in category_counts %}
+        <li>
+          {{ item.label }}
+          {% if item.count > 0 %}
+          <b>{{ item.count }}</b>
+          {% else %}
+          <b class="z">0</b>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+
+      <div class="tip">
+        {% if current_user.role == 'technician' %}
+        <b>Diagnostika eslatmasi</b>
+        Muammoni hal qilgach, yechimni to‘liq yozing va adminga tasdiqlash uchun yuboring.
+        {% else %}
+        <b>Maslahat</b>
+        Muammoni aniq tasvirlash mutaxassisga uni tezroq hal qilishga yordam beradi.
+        {% endif %}
+      </div>
+    </div>
+  </section>
+</main>
 {% endblock %}
